@@ -12,7 +12,9 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    nitroV2Plugin(),
+    nitroV2Plugin({
+      compatibilityDate: "2025-11-09",
+    }),
     viteReact({
       babel: {
         plugins: ["babel-plugin-react-compiler"],
