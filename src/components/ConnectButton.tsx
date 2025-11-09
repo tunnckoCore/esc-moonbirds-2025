@@ -54,11 +54,6 @@ export function ConnectButton() {
 
   return (
     <div className="flex gap-2">
-      {chain && (
-        <Button type="button" variant="outline">
-          {chain.name}
-        </Button>
-      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button type="button">{displayAddress}</Button>
