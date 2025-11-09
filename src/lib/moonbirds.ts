@@ -8,7 +8,7 @@ const hashCache = new Map<string, string>();
 /**
  * Compute SHA256 hash of a string using SubtleCrypto
  */
-async function sha256(
+export async function sha256(
   data: string | ArrayBuffer | Uint8Array,
 ): Promise<string> {
   const encoder = new TextEncoder();
@@ -35,13 +35,13 @@ export async function cachedSha256(dataUri: string): Promise<string> {
 
   const hash = await sha256(dataUri);
   hashCache.set(dataUri, hash);
-  return `0x${hash}`;
+  return hash;
 }
 
 /**
  * Convert bytes to base64 string manually
  */
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   let result = "";
@@ -62,26 +62,34 @@ function bytesToBase64(bytes: Uint8Array): string {
   return result;
 }
 
-type CacheEntry = {
+export type MoonbirdItem = {
+  id: number;
   url: string;
   content_sha: string;
   content_uri: string;
 };
 
-const respCache = new Map<string, CacheEntry>();
+export type MoonbirdItemResponse = {
+  id: number;
+  url: string;
+  content_sha: string;
+  content_uri: string;
+  txhash: `0x${string}` | null;
+};
+
+const respCache = new Map<string, MoonbirdItem>();
+export const BASE_IMAGE_URL = `https://raw.githack.com/proofxyz/moonbirds-assets/main/collection/png`;
 
 /**
  * Fetch an image from URL and convert to data URI
  */
-export async function getImage(url: string): Promise<{
-  url: string;
-  content_sha: string;
-  content_uri: string;
-}> {
+export async function getImage(id: number): Promise<MoonbirdItem> {
+  const url = `${BASE_IMAGE_URL}/${id}.png`;
   if (respCache.has(url)) {
     const entry = respCache.get(url)!;
     return {
-      url,
+      id: entry.id,
+      url: url,
       content_sha: entry.content_sha,
       content_uri: entry.content_uri,
     };
@@ -93,7 +101,12 @@ export async function getImage(url: string): Promise<{
 
   const dataUri = `data:image/png;base64,${bytesToBase64(bytes)}`;
   const hash = await cachedSha256(dataUri);
-  const resp = { url, content_sha: hash, content_uri: dataUri };
+  const resp = {
+    id: id,
+    url: url,
+    content_sha: hash,
+    content_uri: dataUri,
+  };
 
   respCache.set(url, resp);
 
@@ -112,7 +125,7 @@ export async function verifyItems(shas: `0x${string}`[]): Promise<{
   }
 
   const resp = await fetch(
-    `https://api.ethscriptions.com/api/ethscriptions/exists_multi`,
+    `https://api.ethscriptions.com/v2/ethscriptions/exists_multi`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -125,7 +138,7 @@ export async function verifyItems(shas: `0x${string}`[]): Promise<{
   return resp;
 }
 
-type Traits = {
+export type Traits = {
   Specie: string;
   Eyes: string;
   Eyewear: string;
@@ -136,7 +149,8 @@ type Traits = {
   Background: string;
   Beak: string;
 };
-type Attributes = {
+
+export type Attributes = {
   trait_type: Lowercase<keyof Traits>;
   value: string;
 };
@@ -144,31 +158,120 @@ type Attributes = {
 const TRAITS_URL = `https://rawcdn.githack.com/proofxyz/moonbirds-assets/refs/heads/main/traits.json`;
 const traitsCache = new Map<string, Traits[]>();
 
+export async function getItemAttributes(
+  itemIndex: number,
+): Promise<Attributes[]> {
+  const traitsArray = traitsCache.has(TRAITS_URL)
+    ? traitsCache.get(TRAITS_URL)!
+    : [];
+
+  if (traitsArray.length === 0) {
+    const response = await fetch(TRAITS_URL);
+    if (!response.ok) throw new Error("Failed to fetch traits");
+
+    const traitsArray = (await response.json()) as Traits[];
+    traitsCache.set(TRAITS_URL, traitsArray);
+  }
+
+  const itemTraits = traitsArray.find((_, idx) => idx === itemIndex);
+  const itemAttributes = itemTraits
+    ? Object.entries(itemTraits).map(
+        ([key, value]) =>
+          ({
+            trait_type: key.toLowerCase(),
+            value,
+          }) as Attributes,
+      )
+    : [];
+
+  return itemAttributes;
+}
 export const getItemTraitsData = createServerFn({ method: "GET" })
   .inputValidator((index: number) => index)
-  .handler(async ({ data: itemIndex }): Promise<Attributes[]> => {
-    const traitsArray = traitsCache.has(TRAITS_URL)
-      ? traitsCache.get(TRAITS_URL)!
-      : [];
+  .handler(
+    async ({ data: itemIndex }): Promise<Attributes[]> =>
+      getItemAttributes(itemIndex),
+  );
 
-    if (traitsArray.length === 0) {
-      const response = await fetch(TRAITS_URL);
-      if (!response.ok) throw new Error("Failed to fetch traits");
+export async function loadMoonbirdsPage(page: number) {
+  const TOTAL_ITEMS = 10_000;
+  const start = page * 100;
+  const end = Math.min(start + 100, TOTAL_ITEMS);
 
-      const traitsArray = (await response.json()) as Traits[];
-      traitsCache.set(TRAITS_URL, traitsArray);
-    }
+  const items: MoonbirdItem[] = await Promise.all(
+    Array.from({ length: end - start }, async (_, i) => {
+      const itemIndex = start + i;
+      const imageData = await getImage(itemIndex);
+      // const itemAttributes = await getItemAttributes(itemIndex);
 
-    const itemTraits = traitsArray.find((_, idx) => idx === itemIndex);
-    const itemAttributes = itemTraits
-      ? Object.entries(itemTraits).map(
-          ([key, value]) =>
-            ({
-              trait_type: key.toLowerCase(),
-              value,
-            }) as Attributes,
-        )
-      : [];
+      return {
+        id: itemIndex,
+        url: imageData.url,
+        content_uri: imageData.content_uri,
+        content_sha: imageData.content_sha,
+        // attributes: itemAttributes,
+      };
+    }),
+  );
 
-    return itemAttributes;
-  });
+  return {
+    items,
+    page,
+    hasMore: end < TOTAL_ITEMS,
+  };
+}
+
+async function loadPage(page: number): Promise<{
+  items: MoonbirdItemResponse[];
+  page: number;
+  hasMore: boolean;
+}> {
+  const pageData = await loadMoonbirdsPage(page);
+
+  // Filter out items with empty content_sha (failed fetches)
+  const validItems = pageData.items.filter(
+    (item) => item.content_sha && item.content_sha.length > 0,
+  );
+
+  // Verify only valid items
+  let verifyResult: {
+    result: { [key: `0x${string}`]: `0x${string}` | null };
+  } = { result: {} };
+
+  if (validItems.length > 0) {
+    const shas = validItems.map((item) => item.content_sha as `0x${string}`);
+
+    verifyResult = await verifyItems(shas);
+  }
+
+  // Merge txhash into each item
+  const itemsWithTxHash = pageData.items.map((item) => ({
+    id: item.id,
+    url: item.url,
+    content_sha: item.content_sha,
+    content_uri: item.content_uri,
+    // attributes: item.attributes,
+    txhash: item.content_sha
+      ? verifyResult.result[item.content_sha as `0x${string}`] || null
+      : null,
+  }));
+
+  return {
+    items: itemsWithTxHash,
+    page: pageData.page,
+    hasMore: pageData.hasMore,
+  };
+}
+export const getMoonbirdsPage = createServerFn({ method: "GET" })
+  .inputValidator((page: number) => page)
+  .handler(
+    async ({
+      data: page,
+    }): Promise<{
+      items: MoonbirdItemResponse[];
+      page: number;
+      hasMore: boolean;
+    }> => loadPage(page),
+  );
+
+// console.log("results:", await loadPage(0));
