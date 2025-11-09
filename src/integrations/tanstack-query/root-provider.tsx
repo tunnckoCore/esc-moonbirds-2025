@@ -1,4 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  defaultShouldDehydrateQuery,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 
 export function getContext() {
   const queryClient = new QueryClient({
@@ -9,6 +13,11 @@ export function getContext() {
         refetchOnWindowFocus: false,
         refetchOnMount: false,
         refetchOnReconnect: false,
+      },
+      dehydrate: {
+        shouldDehydrateQuery: (query) =>
+          defaultShouldDehydrateQuery(query) ||
+          query.state.status === "pending",
       },
     },
   });

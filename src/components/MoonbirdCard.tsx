@@ -23,17 +23,13 @@ const MoonbirdCardContent = ({ item, onMintSuccess }: MoonbirdCardProps) => {
   const handleMint = async () => {
     if (!isConnected || !address) {
       toast.dismiss();
-      toast.error("Please connect your wallet first", {
-        duration: 5000,
-      });
+      toast.error("Please connect your wallet first");
       return;
     }
 
     if (!walletClient) {
       toast.dismiss();
-      toast.error("Wallet client not initialized", {
-        duration: 5000,
-      });
+      toast.error("Wallet client not initialized");
       return;
     }
 
@@ -52,7 +48,6 @@ const MoonbirdCardContent = ({ item, onMintSuccess }: MoonbirdCardProps) => {
       toast.dismiss();
       toast.loading("Confirming transaction...", {
         description: <TxHashLink hash={txHash} />,
-        duration: 5000,
       });
 
       if (publicClient) {
@@ -65,7 +60,6 @@ const MoonbirdCardContent = ({ item, onMintSuccess }: MoonbirdCardProps) => {
       toast.dismiss();
       toast.success(`Moonbird #${item.id} ethscribed!`, {
         description: <TxHashLink hash={txHash} />,
-        duration: 5000,
       });
 
       onMintSuccess?.(txHash);

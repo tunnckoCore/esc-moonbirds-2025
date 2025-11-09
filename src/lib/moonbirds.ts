@@ -193,10 +193,17 @@ export const getItemTraitsData = createServerFn({ method: "GET" })
       getItemAttributes(itemIndex),
   );
 
+const pageCache = new Map<number, MoonbirdItemResponse[]>();
+
 export async function loadMoonbirdsPage(page: number) {
+  if (pageCache.has(page)) {
+    return pageCache.get(page)!;
+  }
+
   const TOTAL_ITEMS = 10_000;
-  const start = page * 100;
-  const end = Math.min(start + 100, TOTAL_ITEMS);
+  const PAGE_SIZE = 50;
+  const start = page * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, TOTAL_ITEMS);
 
   const items: MoonbirdItem[] = await Promise.all(
     Array.from({ length: end - start }, async (_, i) => {
@@ -214,11 +221,15 @@ export async function loadMoonbirdsPage(page: number) {
     }),
   );
 
-  return {
+  const resp = {
     items,
     page,
     hasMore: end < TOTAL_ITEMS,
   };
+
+  pageCache.set(page, resp);
+
+  return resp;
 }
 
 async function loadPage(page: number): Promise<{

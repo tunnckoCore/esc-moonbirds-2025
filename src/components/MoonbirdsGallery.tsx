@@ -1,20 +1,16 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useRef, useEffect } from "react";
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { MoonbirdItemResponse } from "@/lib/moonbirds";
 import { getMoonbirdsPage } from "@/lib/moonbirds";
 import { MoonbirdCard } from "./MoonbirdCard";
 
-interface MoonbirdsGalleryProps {
-  onClaimedUpdate?: (count: number) => void;
-}
-
-export function MoonbirdsGallery({ onClaimedUpdate }: MoonbirdsGalleryProps) {
+export function MoonbirdsGallery() {
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
-    useInfiniteQuery({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSuspenseInfiniteQuery({
       queryKey: ["moonbirds"],
       queryFn: async ({ pageParam = 0 }) => {
         return await getMoonbirdsPage({ data: pageParam });
@@ -24,15 +20,9 @@ export function MoonbirdsGallery({ onClaimedUpdate }: MoonbirdsGalleryProps) {
         if (!lastPage.hasMore) return undefined;
         return lastPage.page + 1;
       },
-      staleTime: 1000 * 60 * 5,
     });
 
-  const items = data?.pages.flatMap((page) => page.items) ?? [];
-  const claimedCount = items.filter((item) => item.txhash !== null).length;
-
-  useEffect(() => {
-    onClaimedUpdate?.(claimedCount);
-  }, [claimedCount, onClaimedUpdate]);
+  const items = data.pages.flatMap((page) => page.items);
 
   useEffect(() => {
     if (!observerTarget.current) return;
@@ -43,7 +33,7 @@ export function MoonbirdsGallery({ onClaimedUpdate }: MoonbirdsGalleryProps) {
           fetchNextPage();
         }
       },
-      { threshold: 0.3 },
+      { threshold: 0.5 },
     );
 
     observer.observe(observerTarget.current);
@@ -51,30 +41,12 @@ export function MoonbirdsGallery({ onClaimedUpdate }: MoonbirdsGalleryProps) {
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  if (status === "pending") {
-    return (
-      <div className="flex flex-wrap gap-2 p-2">
-        {Array.from({ length: 24 }).map((_, i) => (
-          <div
-            key={`skeleton-${i}`}
-            className="w-24 h-24 bg-gray-800 animate-pulse"
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="w-full flex flex-wrap gap-2 p-2 justify-center">
         {items.map((item) => (
           <div key={item.id} className="w-24 h-24">
-            <MoonbirdCard
-              item={item as MoonbirdItemResponse}
-              onMintSuccess={() => {
-                // Counter is already updated via claimedCount above
-              }}
-            />
+            <MoonbirdCard item={item as MoonbirdItemResponse} />
           </div>
         ))}
       </div>
