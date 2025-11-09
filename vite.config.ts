@@ -19,6 +19,12 @@ const config = defineConfig({
       },
     }),
   ],
+  ssr: {
+    noExternal: ["@rainbow-me/rainbowkit", "@vanilla-extract/sprinkles"],
+  },
+  optimizeDeps: {
+    include: ["@vanilla-extract/sprinkles"],
+  },
 });
 
 export default config;
