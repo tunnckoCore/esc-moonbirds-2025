@@ -5,14 +5,14 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
-export default defineConfig({
+const config = defineConfig({
   plugins: [
-    tanstackStart(),
-    nitro(),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
+    tanstackStart(),
+    nitro(),
     viteReact({
       babel: {
         plugins: ["babel-plugin-react-compiler"],
@@ -20,3 +20,5 @@ export default defineConfig({
     }),
   ],
 });
+
+export default config;
