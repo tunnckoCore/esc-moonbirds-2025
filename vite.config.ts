@@ -3,8 +3,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
-import { nitroV2Plugin } from "@tanstack/nitro-v2-vite-plugin";
-// import { nitro } from "nitro/vite";
+import { nitro } from "nitro/vite";
 
 const config = defineConfig({
   plugins: [
@@ -13,9 +12,10 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    // nitro(),
-    nitroV2Plugin({
-      compatibilityDate: "2025-11-09",
+    nitro({
+      unenv: {
+        alias: { inherits: "inherits" },
+      }
     }),
     viteReact({
       babel: {
