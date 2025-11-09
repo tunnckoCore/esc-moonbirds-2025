@@ -51,6 +51,15 @@ function RouteComponent() {
               </a>{" "}
               •{" "}
               <a
+                href="https://github.com/tunnckoCore/esc-moonbirds"
+                className="text-blue-400"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Old Repo
+              </a>{" "}
+              •{" "}
+              <a
                 href="https://github.com/proofxyz/moonbirds-assets/tree/main/collection/png"
                 className="text-blue-400"
                 target="_blank"
