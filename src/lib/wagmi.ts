@@ -1,9 +1,13 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { mainnet } from 'wagmi/chains';
+import { createConfig, http } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { injected, walletConnect } from "wagmi/connectors";
 
-export const config = getDefaultConfig({
-  appName: 'Ethscriptions Moonbirds',
-  projectId: 'moonbirds-ethscriptions',
+const projectId = "moonbirds-ethscriptions";
+
+export const config = createConfig({
   chains: [mainnet],
-  ssr: true,
+  connectors: [injected(), walletConnect({ projectId })],
+  transports: {
+    [mainnet.id]: http(),
+  },
 });

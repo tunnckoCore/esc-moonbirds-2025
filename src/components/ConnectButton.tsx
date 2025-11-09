@@ -1,88 +1,74 @@
 "use client";
 
-import { ConnectButton as RainbowConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { injected, walletConnect } from "wagmi/connectors";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function ConnectButton() {
   const [mounted, setMounted] = useState(false);
+  const { address, isConnected, chain } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted) {
-    return <div className="h-10 w-32 animate-pulse" />;
+    return <div className="h-10 w-32 animate-pulse bg-gray-700 rounded" />;
   }
 
+  if (!isConnected) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" className="cursor-pointer">
+            Connect Wallet
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {connectors.map((connector) => (
+            <DropdownMenuItem
+              className="cursor-pointer"
+              key={connector.uid}
+              onClick={() => connect({ connector })}
+            >
+              {connector.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  const displayAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : "";
+
   return (
-    <RainbowConnectButton.Custom>
-      {({
-        account,
-        chain,
-        openAccountModal,
-        openChainModal,
-        openConnectModal,
-        authenticationStatus,
-        mounted,
-      }) => {
-        const ready = mounted && authenticationStatus !== "loading";
-        const connected =
-          ready &&
-          account &&
-          chain &&
-          (!authenticationStatus || authenticationStatus === "authenticated");
-
-        return (
-          <div
-            {...(!ready && {
-              "aria-hidden": true,
-              style: {
-                opacity: 0,
-                pointerEvents: "none",
-                userSelect: "none",
-              },
-            })}
-          >
-            {(() => {
-              if (!connected) {
-                return (
-                  <Button onClick={openConnectModal} type="button">
-                    Connect Wallet
-                  </Button>
-                );
-              }
-
-              if (chain.unsupported) {
-                return (
-                  <Button
-                    onClick={openChainModal}
-                    type="button"
-                    variant="destructive"
-                  >
-                    Wrong network
-                  </Button>
-                );
-              }
-
-              return (
-                <div className="flex gap-2">
-                  <Button onClick={openChainModal} type="button">
-                    {chain.name}
-                  </Button>
-
-                  <Button onClick={openAccountModal} type="button">
-                    {account.displayName}
-                    {account.displayBalance
-                      ? ` (${account.displayBalance})`
-                      : ""}
-                  </Button>
-                </div>
-              );
-            })()}
-          </div>
-        );
-      }}
-    </RainbowConnectButton.Custom>
+    <div className="flex gap-2">
+      {chain && (
+        <Button type="button" variant="outline">
+          {chain.name}
+        </Button>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button">{displayAddress}</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => disconnect()}>
+            Disconnect
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
