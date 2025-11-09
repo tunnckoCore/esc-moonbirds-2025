@@ -193,15 +193,26 @@ export const getItemTraitsData = createServerFn({ method: "GET" })
       getItemAttributes(itemIndex),
   );
 
-const pageCache = new Map<number, MoonbirdItemResponse[]>();
+const pageCache = new Map<
+  number,
+  {
+    items: MoonbirdItem[];
+    page: number;
+    hasMore: boolean;
+  }
+>();
 
-export async function loadMoonbirdsPage(page: number) {
+export async function loadMoonbirdsPage(page: number): Promise<{
+  items: MoonbirdItem[];
+  page: number;
+  hasMore: boolean;
+}> {
   if (pageCache.has(page)) {
     return pageCache.get(page)!;
   }
 
   const TOTAL_ITEMS = 10_000;
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 100;
   const start = page * PAGE_SIZE;
   const end = Math.min(start + PAGE_SIZE, TOTAL_ITEMS);
 

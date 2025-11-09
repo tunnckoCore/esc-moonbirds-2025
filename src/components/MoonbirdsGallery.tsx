@@ -33,7 +33,7 @@ export function MoonbirdsGallery() {
           fetchNextPage();
         }
       },
-      { threshold: 0.5 },
+      { threshold: 0.5, rootMargin: "200px" },
     );
 
     observer.observe(observerTarget.current);
