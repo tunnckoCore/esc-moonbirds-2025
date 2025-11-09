@@ -40,7 +40,25 @@ function RouteComponent() {
               Ethscriptions Moonbirds Gallery
             </h1>
             <p className="text-gray-400">
-              All 10,000 Moonbirds • Ethscribed:{" "}
+              All 10,000 Moonbirds •{" "}
+              <a
+                href="https://github.com/tunnckoCore/esc-moonbirds-2025"
+                className="text-blue-400"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Github
+              </a>{" "}
+              •{" "}
+              <a
+                href="https://github.com/proofxyz/moonbirds-assets/tree/main/collection/png"
+                className="text-blue-400"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                PROOFxyz Moonbirds
+              </a>{" "}
+              • Ethscribed:{" "}
               <span className="text-green-400 font-semibold">
                 {claimedCount}
               </span>
