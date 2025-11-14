@@ -7,7 +7,6 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { Toaster } from "sonner";
 
-import Header from "../components/Header";
 import { Web3Provider } from "../components/Web3Provider";
 
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
